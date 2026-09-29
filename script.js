@@ -1,7 +1,7 @@
 // ================================
 // CONFIGURATION & DOM ELEMENTS
 // ================================
-const API_URL = "http://127.0.0.1:8000/predict";
+const API_URL = "https://nyc-house-type-prediction-yona.onrender.com";
 
 const form = document.getElementById("predictionForm");
 const predictBtn = document.getElementById("predictBtn");
