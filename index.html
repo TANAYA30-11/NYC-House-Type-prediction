@@ -1,294 +1,159 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>Airbnb Room Type Classifier</title>
-
-    <link rel="stylesheet"
-          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-
-    <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Room Type Predictor · NYC Airbnb</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
 </head>
-
 <body>
 
-    <!-- Animated Background -->
-    <div class="background">
-        <div class="circle circle1"></div>
-        <div class="circle circle2"></div>
-        <div class="circle circle3"></div>
-    </div>
+<div class="skyline-bg" aria-hidden="true" id="skylineBg"></div>
+<div class="grain" aria-hidden="true"></div>
 
-    <!-- Navigation -->
-    <nav class="navbar">
-        <div class="logo">
-            <i class="fa-brands fa-airbnb"></i>
-            <span>Airbnb<span class="highlight">AI</span></span>
+<div class="page">
+
+  <header class="hero">
+    <p class="eyebrow">NYC Airbnb <span class="dot">·</span> Room Type Predictor</p>
+    <h1 class="headline">What kind of stay<br>is this listing?</h1>
+    <p class="subhead">Enter a listing's details and the model will predict whether it's an
+      entire home, a private room, or a shared room — the way the city lights up differently
+      behind each kind of door.</p>
+  </header>
+
+  <main class="grid">
+
+    <!-- FORM PANEL -->
+    <section class="panel form-panel" aria-labelledby="formTitle">
+      <div class="panel-head">
+        <h2 id="formTitle">Listing details</h2>
+        <button type="button" class="ghost-btn" id="exampleBtn">Try an example</button>
+      </div>
+
+      <form id="predictForm" novalidate>
+
+        <fieldset>
+          <legend>Location</legend>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="latitude">Latitude</label>
+              <input type="number" id="latitude" name="latitude" step="0.000001" min="-90" max="90" placeholder="40.7128" required>
+            </div>
+            <div class="field">
+              <label for="longitude">Longitude</label>
+              <input type="number" id="longitude" name="longitude" step="0.000001" min="-180" max="180" placeholder="-74.0060" required>
+            </div>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="neighbourhood_group">Borough</label>
+              <select id="neighbourhood_group" name="neighbourhood_group" required>
+                <option value="" disabled selected>Choose a borough</option>
+                <option value="Manhattan">Manhattan</option>
+                <option value="Brooklyn">Brooklyn</option>
+                <option value="Queens">Queens</option>
+                <option value="Bronx">Bronx</option>
+                <option value="Staten Island">Staten Island</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="neighbourhood">Neighbourhood</label>
+              <input type="text" id="neighbourhood" name="neighbourhood" placeholder="e.g. Williamsburg" required>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Pricing &amp; stay</legend>
+          <div class="field-row">
+            <div class="field">
+              <label for="price">Price per night (USD)</label>
+              <input type="number" id="price" name="price" min="1" step="1" placeholder="150" required>
+            </div>
+            <div class="field">
+              <label for="minimum_nights">Minimum nights</label>
+              <input type="number" id="minimum_nights" name="minimum_nights" min="1" max="365" step="1" placeholder="3" required>
+            </div>
+          </div>
+          <div class="field">
+            <label for="availability_365">Days available per year</label>
+            <input type="range" id="availability_365" name="availability_365" min="0" max="365" step="1" value="180" required>
+            <div class="range-readout"><span id="availabilityValue">180</span> / 365 days</div>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Reviews &amp; host</legend>
+          <div class="field-row">
+            <div class="field">
+              <label for="number_of_reviews">Total reviews</label>
+              <input type="number" id="number_of_reviews" name="number_of_reviews" min="0" step="1" placeholder="24" required>
+            </div>
+            <div class="field">
+              <label for="reviews_per_month">Reviews per month</label>
+              <input type="number" id="reviews_per_month" name="reviews_per_month" min="0" step="0.01" placeholder="1.2" required>
+            </div>
+          </div>
+          <div class="field">
+            <label for="calculated_host_listings_count">Listings by this host</label>
+            <input type="number" id="calculated_host_listings_count" name="calculated_host_listings_count" min="0" step="1" placeholder="1" required>
+          </div>
+        </fieldset>
+
+        <button type="submit" class="predict-btn" id="predictBtn">
+          <span class="btn-label">Predict room type</span>
+          <span class="btn-spinner" aria-hidden="true"></span>
+        </button>
+
+        <p class="form-error" id="formError" role="alert"></p>
+      </form>
+    </section>
+
+    <!-- RESULT PANEL -->
+    <section class="panel result-panel" aria-labelledby="resultTitle" aria-live="polite">
+      <div class="panel-head">
+        <h2 id="resultTitle">Prediction</h2>
+        <span class="api-status" id="apiStatus"><span class="status-dot"></span>checking API</span>
+      </div>
+
+      <div class="result-empty" id="resultEmpty">
+        <div class="empty-buildings" aria-hidden="true">
+          <div class="mini-building small"></div>
+          <div class="mini-building medium"></div>
+          <div class="mini-building large"></div>
+        </div>
+        <p>Fill in the listing details and predict to see the city light up.</p>
+      </div>
+
+      <div class="result-content" id="resultContent" hidden>
+
+        <div class="predicted-label">
+          <span class="predicted-eyebrow">Most likely</span>
+          <span class="predicted-name" id="predictedName">—</span>
         </div>
 
-        <div class="nav-status">
-            <span class="status-dot"></span>
-            Model Online
+        <div class="buildings-row" id="buildingsRow">
+          <!-- built by JS: one building per class -->
         </div>
-    </nav>
 
-    <!-- Main -->
-    <main class="container">
+        <div class="prob-list" id="probList">
+          <!-- built by JS -->
+        </div>
+      </div>
+    </section>
 
-        <!-- Header -->
-        <section class="hero">
-            <div class="hero-icon">
-                <i class="fa-solid fa-house-chimney"></i>
-            </div>
+  </main>
 
-            <h1>Airbnb Room Type</h1>
-            <h2>Classifier</h2>
+  <footer class="page-footer">
+    <p>Model served via FastAPI &amp; scikit-learn <span class="dot">·</span> trained on NYC Airbnb listing data</p>
+  </footer>
+</div>
 
-            <p>
-                Enter the property details below and our Machine Learning
-                model will predict the room type for you.
-            </p>
-        </section>
-
-        <!-- Form Card -->
-        <section class="card">
-
-            <div class="card-header">
-                <div>
-                    <h3>Property Information</h3>
-                    <p>Enter the Airbnb listing details</p>
-                </div>
-
-                <i class="fa-solid fa-sliders"></i>
-            </div>
-
-            <form id="predictionForm">
-
-                <div class="form-grid">
-
-                    <!-- Latitude -->
-                    <div class="input-group">
-                        <label for="latitude">
-                            <i class="fa-solid fa-location-dot"></i>
-                            Latitude
-                        </label>
-
-                        <input
-                            type="number"
-                            id="latitude"
-                            step="any"
-                            placeholder="Example: 40.7128"
-                            required
-                        >
-                    </div>
-
-                    <!-- Longitude -->
-                    <div class="input-group">
-                        <label for="longitude">
-                            <i class="fa-solid fa-location-arrow"></i>
-                            Longitude
-                        </label>
-
-                        <input
-                            type="number"
-                            id="longitude"
-                            step="any"
-                            placeholder="Example: -74.0060"
-                            required
-                        >
-                    </div>
-
-                    <!-- Price -->
-                    <div class="input-group">
-                        <label for="price">
-                            <i class="fa-solid fa-dollar-sign"></i>
-                            Price per Night
-                        </label>
-
-                        <input
-                            type="number"
-                            id="price"
-                            min="1"
-                            step="any"
-                            placeholder="Example: 150"
-                            required
-                        >
-                    </div>
-
-                    <!-- Minimum Nights -->
-                    <div class="input-group">
-                        <label for="minimum_nights">
-                            <i class="fa-solid fa-moon"></i>
-                            Minimum Nights
-                        </label>
-
-                        <input
-                            type="number"
-                            id="minimum_nights"
-                            min="1"
-                            max="365"
-                            placeholder="Example: 2"
-                            required
-                        >
-                    </div>
-
-                    <!-- Reviews -->
-                    <div class="input-group">
-                        <label for="number_of_reviews">
-                            <i class="fa-solid fa-star"></i>
-                            Number of Reviews
-                        </label>
-
-                        <input
-                            type="number"
-                            id="number_of_reviews"
-                            min="0"
-                            placeholder="Example: 120"
-                            required
-                        >
-                    </div>
-
-                    <!-- Reviews Per Month -->
-                    <div class="input-group">
-                        <label for="reviews_per_month">
-                            <i class="fa-solid fa-chart-line"></i>
-                            Reviews Per Month
-                        </label>
-
-                        <input
-                            type="number"
-                            id="reviews_per_month"
-                            min="0"
-                            step="any"
-                            placeholder="Example: 2.5"
-                            required
-                        >
-                    </div>
-
-                    <!-- Host Listings -->
-                    <div class="input-group">
-                        <label for="calculated_host_listings_count">
-                            <i class="fa-solid fa-user-group"></i>
-                            Host Listings Count
-                        </label>
-
-                        <input
-                            type="number"
-                            id="calculated_host_listings_count"
-                            min="0"
-                            placeholder="Example: 3"
-                            required
-                        >
-                    </div>
-
-                    <!-- Availability -->
-                    <div class="input-group">
-                        <label for="availability_365">
-                            <i class="fa-solid fa-calendar-days"></i>
-                            Availability (365 Days)
-                        </label>
-
-                        <input
-                            type="number"
-                            id="availability_365"
-                            min="0"
-                            max="365"
-                            placeholder="Example: 250"
-                            required
-                        >
-                    </div>
-
-                    <!-- Neighbourhood Group -->
-                    <div class="input-group">
-                        <label for="neighbourhood_group">
-                            <i class="fa-solid fa-city"></i>
-                            Neighbourhood Group
-                        </label>
-
-                        <select id="neighbourhood_group" required>
-                            <option value="">Select Borough</option>
-                            <option value="Bronx">Bronx</option>
-                            <option value="Brooklyn">Brooklyn</option>
-                            <option value="Manhattan">Manhattan</option>
-                            <option value="Queens">Queens</option>
-                            <option value="Staten Island">Staten Island</option>
-                        </select>
-                    </div>
-
-                    <!-- Neighbourhood -->
-                    <div class="input-group">
-                        <label for="neighbourhood">
-                            <i class="fa-solid fa-map"></i>
-                            Neighbourhood
-                        </label>
-
-                        <input
-                            type="text"
-                            id="neighbourhood"
-                            placeholder="Example: Harlem"
-                            required
-                        >
-                    </div>
-
-                </div>
-
-                <!-- Button -->
-                <button type="submit" id="predictBtn">
-
-                    <span id="buttonText">
-                        <i class="fa-solid fa-wand-magic-sparkles"></i>
-                        Predict Room Type
-                    </span>
-
-                    <span id="loader" class="loader"></span>
-
-                </button>
-
-            </form>
-
-            <!-- Error -->
-            <div id="errorBox" class="error-box">
-                <i class="fa-solid fa-circle-exclamation"></i>
-                <span id="errorMessage"></span>
-            </div>
-
-        </section>
-
-
-        <!-- Result -->
-        <section id="resultCard" class="result-card">
-
-            <div class="result-icon">
-                <i class="fa-solid fa-house"></i>
-            </div>
-
-            <p class="result-label">Predicted Room Type</p>
-
-            <h2 id="prediction">-</h2>
-
-            <div class="confidence">
-                <i class="fa-solid fa-chart-simple"></i>
-                <span>Model Probabilities</span>
-            </div>
-
-            <div id="probabilities"></div>
-
-        </section>
-
-    </main>
-
-
-    <footer>
-        <p>
-            <i class="fa-solid fa-brain"></i>
-            Powered by Machine Learning & FastAPI
-        </p>
-    </footer>
-
-
-    <script src="script.js"></script>
-
+<script src="script.js"></script>
 </body>
 </html>
